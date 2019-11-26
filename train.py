@@ -98,7 +98,7 @@ def main():
             img_train = Variable(data.cuda())
 
             out_train = model(img_train)
-            
+
             loss = criterion(out_train, img_train) / (img_train.size()[0]*2)
 
             loss.backward()
@@ -111,7 +111,9 @@ def main():
         print('Epoch %d: loss=%.4f' %(epoch, train_loss_log[epoch]))
 
         # TODO Remove when sure last layer isn't trained
-        print(model.network[-1].weight)
+        for name, param in model.named_parameters():
+            if non_trainable_layer_idx in name:
+                print(param)
 
         model_name = 'DSseed%d_ps%_stride%s_lr%d_layers%d_kernel%d_features%d' % (
             opt.dataset_seed,
