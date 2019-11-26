@@ -20,6 +20,7 @@ class CNN_Model(nn.Module):
             )
 
         def Conv2d_blur(kernel):
+            padding = (gksize - 1) // 2
             layer = nn.Conv2d(
                 in_channels  = channels,
                 out_channels = channels,
