@@ -115,7 +115,7 @@ def main():
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    np.save(os.path.join(log_dir, 'results', results))
+    np.save(os.path.join(log_dir, 'results'), results)
 
     print('Results saved inside Logs!')
 
