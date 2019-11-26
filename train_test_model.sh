@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in {1..10}
+for i in {1..51..5}
 do
   DSsize=$(($i*16))
   echo "training with DSsize = $DSsize"
