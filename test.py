@@ -103,6 +103,8 @@ def main():
 
             mean_psnr = inference('data', model)
 
+            print('Mean_psnr:', mean_psnr)
+
             results_epoch[epoch] = mean_psnr
 
         max_epoch = np.argmax(results_epoch)
