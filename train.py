@@ -115,7 +115,7 @@ def main():
             if non_trainable_layer_idx in name:
                 print(param)
 
-        model_name = 'DSseed%d_ps%_stride%s_lr%d_layers%d_kernel%d_features%d' % (
+        model_name = 'DSseed%d_ps%d_stride%d_lr%d_layers%d_kernel%d_features%d' % (
             opt.dataset_seed,
             opt.patch_size,
             opt.stride,

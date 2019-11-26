@@ -58,7 +58,7 @@ def main():
 
     base_to_patch = ((180 - opt.model_patch_size) // opt.model_stride + 1) ** 2
 
-    model_name = 'DSseed%d_ps%_stride%s_lr%d_layers%d_kernel%d_features%d' % (
+    model_name = 'DSseed%d_ps%d_stride%d_lr%d_layers%d_kernel%d_features%d' % (
         opt.model_seed,
         opt.model_patch_size,
         opt.model_stride,
