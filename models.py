@@ -8,6 +8,7 @@ class CNN_Model(nn.Module):
         super(CNN_Model, self).__init__()
         # We are only interested in grayscale
         channels = 1
+        padding = (kernel_size - 1) // 2
         gkernel = Kernels.kernel_2d(gksize, gsigma)
 
         def Conv2d_train(in_channels, out_channels):
