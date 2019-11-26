@@ -44,7 +44,7 @@ def prepare_data(data_path='./data', patch_size=64, stride=32, gksize=11, gsigma
     for i in range(len(files)):
         img = cv2.imread(files[i])
 
-        Img = cv2.filter2D(img, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+        Img = cv2.filter2D(np.float32(img), -1, kernel, borderType=cv2.BORDER_CONSTANT) / np.sum(kernel)
         h, w, c = Img.shape
 
         Img = np.expand_dims(Img[:,:,0].copy(), 0)

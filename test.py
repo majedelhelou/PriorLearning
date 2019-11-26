@@ -40,7 +40,7 @@ def inference(test_data, model):
 
     for f in files_source:
         Img = cv2.imread(f)
-        Img = cv2.filter2D(np.float32(Img), -1, kernel, borderType=cv2.BORDER_CONSTANT)
+        Img = cv2.filter2D(np.float32(Img), -1, kernel, borderType=cv2.BORDER_CONSTANT) / np.sum(kernel)
         Img = normalize(np.float32(Img[:,:,0]))
         Img = np.expand_dims(Img, 0)
         Img = np.expand_dims(Img, 1)
