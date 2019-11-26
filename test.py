@@ -90,11 +90,11 @@ def main():
             print('Testing with model %s with DSsize %d at epoch %d' % (model_name, DSsize, epoch))
 
             net = CNN_Model(
-                num_of_features = opt.model_features,
-                kernel_size     = opt.model_kernel_size,
-                features        = opt.model_features,
-                gksize          = opt.gksize,
-                gsigma          = opt.gsigma
+                num_of_layers = opt.model_num_layers,
+                kernel_size   = opt.model_kernel_size,
+                features      = opt.model_features,
+                gksize        = opt.gksize,
+                gsigma        = opt.gsigma
             )
 
             model = nn.DataParallel(net).cuda()
