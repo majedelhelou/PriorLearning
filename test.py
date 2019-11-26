@@ -19,7 +19,7 @@ parser.add_argument("--model_patch_size",  type=int,   default=64,   help='train
 parser.add_argument("--model_stride",      type=int,   default=32,   help='train dataset stride')
 parser.add_argument("--model_lr",          type=float, default=1e-3, help='lr used for training the model')
 parser.add_argument("--model_num_layers",  type=int,   default=10,   help='number of layers in the model')
-parser.add_arugment("--model_kernel_size", type=int,   default=3,    help='kernel size in the model')
+parser.add_argument("--model_kernel_size", type=int,   default=3,    help='kernel size in the model')
 parser.add_argument("--model_features",    type=int,   default=64,   help='number of features in the model')
 parser.add_argument("--gksize",            type=int,   default=11,   help='blur kernel size')
 parser.add_argument("--gsigma",            type=int,   default=3,    help='blur kernel sigma')
