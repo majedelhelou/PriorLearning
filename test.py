@@ -73,7 +73,9 @@ def main():
 
     model_DSsizes = os.listdir(model_dir)
 
-    results = np.zeros((len(model_DSsizes), 2))
+    # There are 400 base train images
+    nb_base_train_images = 400
+    results = np.zeros((nb_base_train_images, 2))
 
     for model_DSsize in model_DSsizes:
         DSsize = int(model_DSsize.split('size')[-1])
