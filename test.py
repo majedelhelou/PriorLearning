@@ -87,7 +87,7 @@ def main():
         for model_epoch in model_epochs:
             epoch = int(model_epoch.split('_')[-1].split('.')[0]) # + 1
 
-            print('Testing with model %s with DSsize %d at epoch %d' % (DSsize, epoch))
+            print('Testing with model %s with DSsize %d at epoch %d' % (model_name, DSsize, epoch))
 
             net = CNN_Model(
                 num_of_features = opt.model_features,
