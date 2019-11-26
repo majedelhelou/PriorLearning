@@ -57,6 +57,8 @@ def main():
         gsigma        = opt.gsigma
     )
 
+    non_trainable_layer_idx = str(len(net.network) - 1)
+
     # Loss
     criterion = nn.MSELoss(size_average=False)
 
@@ -64,9 +66,14 @@ def main():
     model = nn.DataParallel(net).cuda()
     criterion.cuda()
 
+    # Set last layer to non trainable
+    for name, param in model.named_parameters():
+        if non_trainable_layer_idx in name:
+            param.requires_grad = False
+
     # Optimizer
     # TODO: check if that's correct and doesn't train the fixed convolution layer
-    optimizer = optim.Adam(model.network[:-1].parameters(), lr=opt.lr)
+    optimizer = optim.Adam(model.parameters(), lr=opt.lr)
 
     train_loss_log = np.zeros(opt.epochs)
 
