@@ -98,6 +98,10 @@ def main():
             img_train = Variable(data.cuda())
 
             out_train = model(img_train)
+            print('in shape: ')
+            print(img_train.size())
+            print('out shape: ')
+            print(out_train.size())
             loss = criterion(out_train, img_train) / (img_train.size()[0]*2)
 
             loss.backward()

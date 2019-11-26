@@ -24,7 +24,7 @@ class CNN_Model(nn.Module):
                 in_channels  = channels,
                 out_channels = channels,
                 kernel_size  = kernel.shape,
-                padding      = 0,
+                padding      = padding,
                 bias         = False
             )
 
