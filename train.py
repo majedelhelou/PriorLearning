@@ -25,7 +25,7 @@ parser.add_argument("--dataset_size",        type=int,   default=16,    help='tr
 parser.add_argument("--dataset_seed",        type=int,   default=1234,  help='seed to determine dataset order')
 parser.add_argument("--network_kernel_size", type=int,   default=3,     help='network convolution kernel size')
 parser.add_argument("--network_features",    type=int,   default=64,    help='network numbre of features')
-parser.add_argument("--batch_size",          type=int,   default=100,   help="Training batch size")
+parser.add_argument("--batch_size",          type=int,   default=16,    help="Training batch size")
 parser.add_argument("--num_of_layers",       type=int,   default=10,    help="Number of total layers")
 parser.add_argument("--epochs",              type=int,   default=50,    help="Number of training epochs")
 parser.add_argument("--milestone",           type=int,   default=30,    help="When to decay learning rate; should be less than epochs")
@@ -72,7 +72,6 @@ def main():
             param.requires_grad = False
 
     # Optimizer
-    # TODO: check if that's correct and doesn't train the fixed convolution layer
     optimizer = optim.Adam(model.parameters(), lr=opt.lr)
 
     train_loss_log = np.zeros(opt.epochs)
@@ -109,11 +108,6 @@ def main():
         train_loss_log[epoch] = train_loss_log[epoch] / len(loader_train)
 
         print('Epoch %d: loss=%.4f' %(epoch, train_loss_log[epoch]))
-
-        # TODO Remove when sure last layer isn't trained
-        for name, param in model.named_parameters():
-            if non_trainable_layer_idx in name:
-                print(param)
 
         model_name = 'DSseed%d_ps%d_stride%d_lr%d_layers%d_kernel%d_features%d' % (
             opt.dataset_seed,
