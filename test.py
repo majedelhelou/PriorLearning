@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from models import CNN_Model
-from util import Kernels
+from util import Kernels, batch_PSNR
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
