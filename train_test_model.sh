@@ -1,6 +1,9 @@
 #!/bin/bash
 
-for i in {1..51..5}
+echo "training with DSsize = 16"
+python3 train.py --dataset_size=16 --epochs=40 --milestone=20
+
+for i in {2..400}
 do
   DSsize=$(($i*16))
   echo "training with DSsize = $DSsize"
