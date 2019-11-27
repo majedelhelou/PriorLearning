@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import math
-#from skimage.measure.simple_metrics import compare_psnr
+from skimage.measure.simple_metrics import compare_psnr
 
 
 class Kernels:
@@ -27,10 +27,7 @@ def batch_PSNR(img, imclean, data_range):
     Iclean = imclean.data.cpu().numpy().astype(np.float32)
     PSNR = 0
     for i in range(Img.shape[0]):
-        mse = np.mean(np.square(Iclean[i,:,:,:] - Img[I,:,:,:]))
-        psnr = 10 * np.log10((data_range ** 2) / mse)
-        PSNR += psnr
-        #PSNR += compare_psnr(Iclean[i,:,:,:], Img[i,:,:,:], data_range=data_range)
+        PSNR += compare_psnr(Iclean[i,:,:,:], Img[i,:,:,:], data_range=data_range)
     if math.isnan(PSNR):
         import pdb; pdb.set_trace()
     return (PSNR/Img.shape[0])
