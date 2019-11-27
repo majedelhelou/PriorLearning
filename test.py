@@ -45,7 +45,7 @@ def inference(test_data, model):
         Img = np.expand_dims(Img, 0)
         Img = np.expand_dims(Img, 1)
         ISource = torch.Tensor(Img)
-        ISource = Variable(ISource.cuda())
+        ISource = Variable(ISource.cuda(0))
 
         with torch.no_grad():
             IOut = model(ISource)
@@ -99,7 +99,7 @@ def main():
                 gsigma        = opt.gsigma
             )
 
-            model = nn.DataParallel(net).cuda()
+            model = nn.DataParallel(net).cuda(0)
             model.load_state_dict(torch.load(os.path.join(epochs_dir, model_epoch)))
             model.eval()
 

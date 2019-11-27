@@ -63,8 +63,8 @@ def main():
     criterion = nn.MSELoss(size_average=False)
 
     # Move to GPU
-    model = nn.DataParallel(net).cuda()
-    criterion.cuda()
+    model = nn.DataParallel(net).cuda(0)
+    criterion.cuda(0)
 
     # Set last layer to non trainable
     for name, param in model.named_parameters():
@@ -94,7 +94,7 @@ def main():
             optimizer.zero_grad()
 
             # Training step
-            img_train = Variable(data.cuda())
+            img_train = Variable(data.cuda(0))
 
             out_train = model(img_train)
 
