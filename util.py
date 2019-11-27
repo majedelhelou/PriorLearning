@@ -18,6 +18,7 @@ class Kernels:
             (kernel_size, kernel_size),
             dtype=float
         )
+        kernel = kernel / np.sum(kernel)
         return kernel
 
 
