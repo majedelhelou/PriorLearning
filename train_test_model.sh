@@ -35,4 +35,4 @@ do
   python3 train.py --dataset_size=$DSsize --epochs=40 --milestone=20 --dataset_seed=$seed
 done
 
-python3 test.py
+python3 test.py --model_seed=$seed
