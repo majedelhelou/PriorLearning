@@ -90,6 +90,7 @@ def main():
 
     train_loss_log = np.zeros(opt.epochs)
     validation_loss_log = np.zeros(opt.epochs)
+    validation_psnr_log = np.zeros(opt.epochs)
 
     early_stopping = EarlyStopping(
         opt.dataset_size,
@@ -149,14 +150,16 @@ def main():
                 IOut = model(ISource)
                 loss = criterion(IOut, ISource) / (ISource.size()[0]*2)
                 validation_loss_log[epoch] += loss.item()
+                validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
 
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
+        validation_psnr_log[epoch] = validation_loss_log[epoch] / len(files_source)
 
         # TODO get training and validation loss on ground truth images
         model_ground_truth = nn.Sequential(*list(model.children())[:-1])
 
-        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f' \
-               %(epoch, train_loss_log[epoch], validation_loss_log[epoch]))
+        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, validation_psnr=%.4f' \
+               %(epoch, train_loss_log[epoch], validation_loss_log[epoch]), validation_psnr_log[epoch])
 
         early_stopping(validation_loss_log[epoch], model)
 
@@ -169,6 +172,7 @@ def main():
             os.makedirs(model_dir)
         np.save(os.path.join(model_dir, 'train_loss'), train_loss_log)
         np.save(os.path.join(model_dir, 'validation_loss'), validation_loss_log)
+        np.save(os.path.join(model_dir, 'validation_psnr'), validation_psnr_log)
 
 
 if __name__ == "__main__":
