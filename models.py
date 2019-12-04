@@ -55,3 +55,7 @@ class CNN_Model(nn.Module):
     def forward(self, x):
         out = self.network(x)
         return out
+
+    def deblurr(self, x):
+        out = self.network[:-1](x)
+        return out

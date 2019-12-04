@@ -133,11 +133,9 @@ def main():
             train_loss_log[epoch] += loss.item()
 
         train_loss_log[epoch] = train_loss_log[epoch] / len(loader_train)
-        print(model)
-        print(model.module)
+
         # Eval
         model.eval()
-
         files_source = glob.glob(os.path.join('data', 'BSD68', '*.png'))
         files_source.sort()
         kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
