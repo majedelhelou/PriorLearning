@@ -3,14 +3,14 @@ import numpy as np
 import torch
 
 class EarlyStopping:
-    def __init__(self, dataset_size, seed, ps, stride, lr, layers, kernel_size, features, patience=10):
+    def __init__(self, dataset_size, optimizer, seed, ps, stride, lr, layers, kernel_size, features, patience=10):
         self.patience = patience
         self.counter = 0
         self.early_stop = False
         self.min_val_loss = np.Inf
         self.dataset_size = dataset_size
-        self.model_name = 'DSseed%d_ps%d_stride%d_lr%d_layers%d_kernel%d_features%d' \
-                           % (seed, ps, stride, lr, layers, kernel_size, features)
+        self.model_name = 'DSseed%d_%s_ps%d_stride%d_lr%d_layers%d_kernel%d_features%d' \
+                           % (seed, optimizer, ps, stride, lr, layers, kernel_size, features)
 
     def __call__(self, val_loss, model):
         if val_loss >= self.min_val_loss:

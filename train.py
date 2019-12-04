@@ -31,8 +31,8 @@ parser.add_argument("--network_kernel_size", type=int,    default=3,     help='n
 parser.add_argument("--network_features",    type=int,    default=64,    help='network numbre of features')
 parser.add_argument("--batch_size",          type=int,    default=16,    help="Training batch size")
 parser.add_argument("--num_of_layers",       type=int,    default=10,    help="Number of total layers")
-parser.add_argument("--epochs",              type=int,    default=50,    help="Number of training epochs")
-parser.add_argument("--milestone",           type=int,    default=30,    help="When to decay learning rate; should be less than epochs")
+parser.add_argument("--epochs",              type=int,    default=100,   help="Number of training epochs")
+parser.add_argument("--milestone",           type=int,    default=40,    help="When to decay learning rate; should be less than epochs")
 parser.add_argument("--lr",                  type=float,  default=1e-3,  help="Initial learning rate")
 parser.add_argument("--optimizer",           type=str,    default='SGD', help="Network optimizer")
 
@@ -91,11 +91,10 @@ def main():
     train_loss_log = np.zeros(opt.epochs)
     validation_loss_log = np.zeros(opt.epochs)
     validation_psnr_log = np.zeros(opt.epochs)
-    t_log = np.zeros(opt.epochs)
-    tt_log = np.zeros(opt.epochs)
 
     early_stopping = EarlyStopping(
         opt.dataset_size,
+        opt.optimizer,
         opt.dataset_seed,
         opt.patch_size,
         opt.stride,
@@ -117,7 +116,6 @@ def main():
 
         # Train
         model.train()
-        mse_list = []
         for i, data in enumerate(loader_train, 0):
             model.zero_grad()
             optimizer.zero_grad()
@@ -133,7 +131,6 @@ def main():
             optimizer.step()
 
             train_loss_log[epoch] += loss.item()
-            mse_list.append(batch_MSE(out_train, img_train))
 
         train_loss_log[epoch] = train_loss_log[epoch] / len(loader_train)
 
@@ -155,32 +152,29 @@ def main():
                 loss = criterion(IOut, ISource)
                 validation_loss_log[epoch] += loss.item()
                 validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
-                t_log[epoch] += batch_MSE(IOut, ISource)
 
 
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
         validation_psnr_log[epoch] = validation_psnr_log[epoch] / len(files_source)
-        t_log[epoch] = t_log[epoch] / len(files_source)
-        tt_log[epoch] = np.mean(mse_list)
 
         # TODO get training and validation loss on ground truth images
         model_ground_truth = nn.Sequential(*list(model.children())[:-1])
 
-        print('Epoch %d: train_loss=%.4f, train_mse=%.4f, validation_loss=%.4f, mse=%.4f, validation_psnr=%.4f' \
-               %(epoch, train_loss_log[epoch], tt_log[epoch], validation_loss_log[epoch], t_log[epoch], validation_psnr_log[epoch]))
+        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, validation_psnr=%.4f' \
+               %(epoch, train_loss_log[epoch], validation_loss_log[epoch], validation_psnr_log[epoch]))
 
         early_stopping(validation_loss_log[epoch], model)
 
         if early_stopping.early_stop:
             print('Early stopping triggered.')
 
-        model_dir = os.path.join(early_stopping.model_name, 'DSsize%d' % opt.dataset_size)
-        model_dir = os.path.join('saved_models', model_dir)
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
-        np.save(os.path.join(model_dir, 'train_loss'), train_loss_log)
-        np.save(os.path.join(model_dir, 'validation_loss'), validation_loss_log)
-        np.save(os.path.join(model_dir, 'validation_psnr'), validation_psnr_log)
+        log_dir = os.path.join(early_stopping.model_name, 'DSsize%d' % opt.dataset_size)
+        log_dir = os.path.join('logs', model_dir)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        np.save(os.path.join(log_dir, 'train_loss'), train_loss_log)
+        np.save(os.path.join(log_dir, 'validation_loss'), validation_loss_log)
+        np.save(os.path.join(log_dir, 'validation_psnr'), validation_psnr_log)
 
 
 if __name__ == "__main__":
