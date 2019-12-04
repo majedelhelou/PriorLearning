@@ -136,9 +136,6 @@ def main():
         print(model)
         # Eval
         model.eval()
-        # Model without last convolution layer
-        model_ground_truth = nn.Sequential(*list(model.children())[:-1])
-        model_ground_truth.eval()
 
         files_source = glob.glob(os.path.join('data', 'BSD68', '*.png'))
         files_source.sort()
@@ -164,7 +161,7 @@ def main():
                 validation_loss_log[epoch] += loss.item()
                 validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
 
-                IOut_clear = model[:-1](ISource)
+                IOut_clear = model.deblurr(ISource)
                 loss_clear = criterion(IOut_clear, ISource_clear)
                 validation_loss_clear[epoch] += loss_clear.item()
                 validation_psnr_clear[epoch] += batch_PSNR(IOut_clear, ISource_clear, 1.)
