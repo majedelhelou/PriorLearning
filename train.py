@@ -158,7 +158,7 @@ def main():
             ISource_clear = Variable(ISource_clear.cuda(0))
             with torch.no_grad():
                 IOut = model(ISource)
-                loss = criterion(IOut[:,:,pad:-pad,pad:-pad], ISource[:,:,pad:-pad,pad:-pad)
+                loss = criterion(IOut[:,:,pad:-pad,pad:-pad], ISource[:,:,pad:-pad,pad:-pad])
                 validation_loss_log[epoch] += loss.item()
                 validation_psnr_log[epoch] += batch_PSNR(IOut[:,:,pad:-pad,pad:-pad], ISource[:,:,pad:-pad,pad:-pad], 1.)
 
