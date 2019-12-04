@@ -92,6 +92,7 @@ def main():
     validation_loss_log = np.zeros(opt.epochs)
     validation_psnr_log = np.zeros(opt.epochs)
     t_log = np.zeros(opt.epochs)
+    tt_log = np.zeros(opt.epochs)
 
     early_stopping = EarlyStopping(
         opt.dataset_size,
