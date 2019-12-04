@@ -159,7 +159,7 @@ def main():
         model_ground_truth = nn.Sequential(*list(model.children())[:-1])
 
         print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, validation_psnr=%.4f' \
-               %(epoch, train_loss_log[epoch], validation_loss_log[epoch]), validation_psnr_log[epoch])
+               %(epoch, train_loss_log[epoch], validation_loss_log[epoch], validation_psnr_log[epoch]))
 
         early_stopping(validation_loss_log[epoch], model)
 
