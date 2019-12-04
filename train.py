@@ -31,8 +31,8 @@ parser.add_argument("--network_kernel_size", type=int,    default=3,     help='n
 parser.add_argument("--network_features",    type=int,    default=64,    help='network numbre of features')
 parser.add_argument("--batch_size",          type=int,    default=16,    help="Training batch size")
 parser.add_argument("--num_of_layers",       type=int,    default=10,    help="Number of total layers")
-parser.add_argument("--epochs",              type=int,    default=100,   help="Number of training epochs")
-parser.add_argument("--milestone",           type=int,    default=40,    help="When to decay learning rate; should be less than epochs")
+parser.add_argument("--epochs",              type=int,    default=150,   help="Number of training epochs")
+parser.add_argument("--milestone",           type=int,    default=50,    help="When to decay learning rate; should be less than epochs")
 parser.add_argument("--lr",                  type=float,  default=1e-3,  help="Initial learning rate")
 parser.add_argument("--optimizer",           type=str,    default='SGD', help="Network optimizer")
 
@@ -91,6 +91,8 @@ def main():
     train_loss_log = np.zeros(opt.epochs)
     validation_loss_log = np.zeros(opt.epochs)
     validation_psnr_log = np.zeros(opt.epochs)
+    validation_loss_clear = np.zeros(opt.epochs)
+    validation_psnr_clear = np.zeros(opt.epochs)
 
     early_stopping = EarlyStopping(
         opt.dataset_size,
@@ -134,45 +136,61 @@ def main():
 
         # Eval
         model.eval()
+        # Model without last convolution layer
+        model_ground_truth = nn.Sequential(*list(model.children())[:-1])
+        model_ground_truth.eval()
+
         files_source = glob.glob(os.path.join('data', 'BSD68', '*.png'))
         files_source.sort()
         kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
         for f in files_source:
-            Img = cv2.imread(f)
-            Img = cv2.filter2D(np.float32(Img), -1, kernel, borderType=cv2.BORDER_CONSTANT)
+            Img_clear = cv2.imread(f)
+
+            Img = cv2.filter2D(np.float32(Img_clear), -1, kernel, borderType=cv2.BORDER_CONSTANT)
             Img = normalize(np.float32(Img[:,:,0]))
             Img = np.expand_dims(Img, 0)
             Img = np.expand_dims(Img, 1)
             ISource = torch.Tensor(Img)
             ISource = Variable(ISource.cuda(0))
+
+            Img_clear = normalize(np.float32(Img_clear[:,:,0]))
+            Img_clear = np.expand_dims(Img_clear, 0)
+            Img_clear = np.expand_dims(Img_clear, 1)
+            ISource_clear = torch.Tensor(Img_clear)
+            ISource_clear = Variable(ISource_clear.cuda(0))
             with torch.no_grad():
                 IOut = model(ISource)
                 loss = criterion(IOut, ISource)
                 validation_loss_log[epoch] += loss.item()
                 validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
 
+                IOut_clear = model_ground_truth(ISource)
+                loss_clear = critetion(IOut_clear, ISource_clear)
+                validation_loss_clear[epoch] += loss_clear.item()
+                validation_psnr_clear[epoch] += batch_PSNR(IOut_clear, ISource_clear, 1.)
 
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
         validation_psnr_log[epoch] = validation_psnr_log[epoch] / len(files_source)
+        validation_loss_clear[epoch] = validation_loss_clear[epoch] / len(files_source)
+        validation_psnr_clear[epoch] = validation_psnr_clear[epoch] / len(files_source)
 
-        # TODO get training and validation loss on ground truth images
-        model_ground_truth = nn.Sequential(*list(model.children())[:-1])
-
-        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, validation_psnr=%.4f' \
-               %(epoch, train_loss_log[epoch], validation_loss_log[epoch], validation_psnr_log[epoch]))
+        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, validation_psnr=%.4f, val_GT_loss=%.4f, val_GT_psnr=%.4f' \
+               %(epoch, train_loss_log[epoch], validation_loss_log[epoch], validation_psnr_log[epoch],
+                 validation_loss_clear[epoch], validation_psnr_clear[epoch]))
 
         early_stopping(validation_loss_log[epoch], model)
 
         if early_stopping.early_stop:
             print('Early stopping triggered.')
+            break
 
-        log_dir = os.path.join(early_stopping.model_name, 'DSsize%d' % opt.dataset_size)
-        log_dir = os.path.join('logs', log_dir)
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-        np.save(os.path.join(log_dir, 'train_loss'), train_loss_log)
-        np.save(os.path.join(log_dir, 'validation_loss'), validation_loss_log)
-        np.save(os.path.join(log_dir, 'validation_psnr'), validation_psnr_log)
+    log_dir = os.path.join(early_stopping.model_name, 'DSsize%d' % opt.dataset_size)
+    log_dir = os.path.join('logs', log_dir)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    np.save(os.path.join(log_dir, 'train_loss'), train_loss_log)
+    np.save(os.path.join(log_dir, 'validation_loss'), validation_loss_log)
+    np.save(os.path.join(log_dir, 'validation_psnr'), validation_psnr_log)
 
 
 if __name__ == "__main__":
