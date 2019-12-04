@@ -132,7 +132,7 @@ def main():
 
         # Eval
         model.eval()
-        files_source = glob.glob(os.path.join(test_data, 'BSD68', '*.png'))
+        files_source = glob.glob(os.path.join('data', 'BSD68', '*.png'))
         files_source.sort()
         kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
         for f in files_source:
