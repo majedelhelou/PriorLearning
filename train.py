@@ -71,7 +71,7 @@ def main():
     non_trainable_layer_idx = str(len(net.network) - 1)
 
     # Loss
-    criterion = nn.MSELoss(size_average=False)
+    criterion = nn.MSELoss()
 
     # Move to GPU
     model = nn.DataParallel(net).cuda(0)
