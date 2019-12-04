@@ -116,6 +116,7 @@ def main():
 
         # Train
         model.train()
+        mse_list = []
         for i, data in enumerate(loader_train, 0):
             model.zero_grad()
             optimizer.zero_grad()
@@ -131,6 +132,7 @@ def main():
             optimizer.step()
 
             train_loss_log[epoch] += loss.item()
+            mse_list.append(batch_MSE(out_train, img_train))
 
         train_loss_log[epoch] = train_loss_log[epoch] / len(loader_train)
 
@@ -158,12 +160,13 @@ def main():
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
         validation_psnr_log[epoch] = validation_psnr_log[epoch] / len(files_source)
         t_log[epoch] = t_log[epoch] / len(files_source)
+        tt_log[epoch] = np.mean(mse_list)
 
         # TODO get training and validation loss on ground truth images
         model_ground_truth = nn.Sequential(*list(model.children())[:-1])
 
-        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, mse=%.4f, validation_psnr=%.4f' \
-               %(epoch, train_loss_log[epoch], validation_loss_log[epoch], t_log[epoch], validation_psnr_log[epoch]))
+        print('Epoch %d: train_loss=%.4f, train_mse=%.4f, validation_loss=%.4f, mse=%.4f, validation_psnr=%.4f' \
+               %(epoch, train_loss_log[epoch], tt_log[epoch], validation_loss_log[epoch], t_log[epoch], validation_psnr_log[epoch]))
 
         early_stopping(validation_loss_log[epoch], model)
 
