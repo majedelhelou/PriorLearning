@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from models import CNN_Model
 from dataset import prepare_data, Dataset
 from early_stopping import EarlyStopping
+from util import Kernels
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
