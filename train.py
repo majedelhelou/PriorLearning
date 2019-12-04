@@ -11,7 +11,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 from models import CNN_Model
-from dataset import prepare_data, Dataset
+from dataset import normalize, prepare_data, Dataset
 from early_stopping import EarlyStopping
 from util import Kernels
 
