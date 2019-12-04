@@ -13,7 +13,7 @@ class EarlyStopping:
                            % (seed, ps, stride, lr, layers, kernel_size, features)
 
     def __call__(self, val_loss, model):
-        if val_loss >= min_val_loss:
+        if val_loss >= self.min_val_loss:
             self.counter += 1
             print('No improvement for %d epochs' %self.counter)
             if self.counter >= self.patience:
@@ -21,6 +21,7 @@ class EarlyStopping:
         else:
             self.save_checkpoint(val_loss, model)
             self.counter = 0
+            self.min_val_loss = val_loss
 
     def save_checkpoint(self, val_loss, model):
         model_dir = os.path.join(self.model_name, 'DSsize%d' % self.dataset_size)
