@@ -165,7 +165,7 @@ def main():
                 validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
 
                 IOut_clear = model_ground_truth(ISource)
-                loss_clear = critetion(IOut_clear, ISource_clear)
+                loss_clear = criterion(IOut_clear, ISource_clear)
                 validation_loss_clear[epoch] += loss_clear.item()
                 validation_psnr_clear[epoch] += batch_PSNR(IOut_clear, ISource_clear, 1.)
 
@@ -191,6 +191,8 @@ def main():
     np.save(os.path.join(log_dir, 'train_loss'), train_loss_log)
     np.save(os.path.join(log_dir, 'validation_loss'), validation_loss_log)
     np.save(os.path.join(log_dir, 'validation_psnr'), validation_psnr_log)
+    np.save(os.path.join(log_dir, 'val_GT_loss'), validation_loss_clear)
+    np.save(os.path.join(log_dir, 'val_GT_psnr'), validation_psnr_clear)
 
 
 if __name__ == "__main__":
