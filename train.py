@@ -1,6 +1,5 @@
 import os
 import argparse
-import string
 import numpy as np
 import torch
 import torch.nn as nn
@@ -32,7 +31,7 @@ parser.add_argument("--num_of_layers",       type=int,    default=10,    help="N
 parser.add_argument("--epochs",              type=int,    default=50,    help="Number of training epochs")
 parser.add_argument("--milestone",           type=int,    default=30,    help="When to decay learning rate; should be less than epochs")
 parser.add_argument("--lr",                  type=float,  default=1e-3,  help="Initial learning rate")
-parser.add_argument("--optimizer",           type=string, default='SGD', help="Network optimizer")
+parser.add_argument("--optimizer",           type=str,    default='SGD', help="Network optimizer")
 
 opt = parser.parse_args()
 
