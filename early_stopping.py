@@ -9,8 +9,8 @@ class EarlyStopping:
         self.early_stop = False
         self.min_val_loss = np.Inf
         self.dataset_size = dataset_size
-        self.model_name = 'DSseed%d_%s_lr%d_batchsize%d_depth%d_gsigma%d' \
-                           % (seed, optimizer, lr, batchsize, depth, gsigma)
+        self.model_name = 'DSseed%d_%s_lr%s_batchsize%d_depth%d_gsigma%d' \
+                           % (seed, optimizer, 'p'.join(str(lr).split('.')), batchsize, depth, gsigma)
 
     def __call__(self, val_loss, model):
         if val_loss >= self.min_val_loss:

@@ -1,6 +1,10 @@
 #!/bin/bash
 
 seed=1234
+optimizer=Adam
+lr=1e-3
+batch_size=16
+kernel=11
 
 while (( "$#" )); do
   case "$1" in
@@ -15,6 +19,41 @@ while (( "$#" )); do
       fi
       shift
       ;;
+    -o|--optimizer)
+      if [ ! -z "$2" ]; then
+        optimizer=$2
+        shift
+      fi
+      shift
+      ;;
+    -lr|--learning_rate)
+      if [ ! -z "$2" ]; then
+        lr=$2
+        shift
+      fi
+      shift
+      ;;
+    -b|--batch_size)
+      if [ ! -z "$2" ]; then
+        batch_size=$2
+        shift
+      fi
+      shift
+      ;;
+    -k|--kernel)
+      if [ ! -z "$2" ]; then
+        kernel=$2
+        shift
+      fi
+      shift
+      ;;
+    -d|--depth)
+      if [ ! -z "$2" ]; then
+        depth=$2
+        shift
+      fi
+      shift
+      ;;
     *)
       shift
       ;;
@@ -23,16 +62,14 @@ done
 
 echo "training with DSsize = 16"
 if [ "$createdataset" == "true" ]; then
-  python3 train.py --preprocess=True --dataset_size=16 --epochs=40 --milestone=20 --dataset_seed=$seed
+  python3 train.py --preprocess=True --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gksize=$kernel
 else
-  python3 train.py --dataset_size=16 --epochs=40 --milestone=20 --dataset_seed=$seed
+  python3 train.py --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gksize=$kernel
 fi
 
-for i in {2..400}
+for i in 100 200 300 400
 do
   DSsize=$(($i*16))
   echo "training with DSsize = $DSsize"
-  python3 train.py --dataset_size=$DSsize --epochs=40 --milestone=20 --dataset_seed=$seed
+  python3 train.py --dataset_size=$DSsize --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gksize=$kernel
 done
-
-python3 test.py --model_seed=$seed
