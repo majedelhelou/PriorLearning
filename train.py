@@ -104,6 +104,9 @@ def main():
         opt.gsigma
     )
 
+    # border size to excluse (cropping)
+    pad = (opt.gksize) - 1 // 2
+
     for epoch in range(opt.epochs):
         if epoch < opt.milestone:
             current_lr = opt.lr
@@ -120,13 +123,12 @@ def main():
             model.zero_grad()
             optimizer.zero_grad()
             batch = data[:,:,:,:,1]
-            print(batch.shape)
 
             # Training step
             img_train = Variable(batch.cuda(0))
             out_train = model(img_train)
 
-            loss = criterion(out_train, img_train)
+            loss = criterion(out_train[:,:,pad:-pad,pad:-pad], img_train[:,:,pad:-pad,pad:-pad])
 
             loss.backward()
             optimizer.step()
@@ -140,7 +142,6 @@ def main():
         files_source = glob.glob(os.path.join('data', 'BSD68', '*.png'))
         files_source.sort()
         kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
-        pad = (opt.gksize) - 1 // 2
         for f in files_source:
             Img_clear = cv2.imread(f)
 
