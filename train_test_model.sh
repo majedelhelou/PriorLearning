@@ -5,6 +5,7 @@ optimizer=Adam
 lr=1e-3
 batch_size=16
 kernel=11
+depth=10
 
 while (( "$#" )); do
   case "$1" in
