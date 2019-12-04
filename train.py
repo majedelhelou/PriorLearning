@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from models import CNN_Model
 from dataset import normalize, prepare_data, Dataset
 from early_stopping import EarlyStopping
-from util import Kernels, batch_PSNR
+from util import Kernels, batch_PSNR, batch_MSE
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -91,6 +91,7 @@ def main():
     train_loss_log = np.zeros(opt.epochs)
     validation_loss_log = np.zeros(opt.epochs)
     validation_psnr_log = np.zeros(opt.epochs)
+    t_log = np.zeros(opt.epochs)
 
     early_stopping = EarlyStopping(
         opt.dataset_size,
@@ -151,15 +152,18 @@ def main():
                 loss = criterion(IOut, ISource) / (ISource.size()[0]*2)
                 validation_loss_log[epoch] += loss.item()
                 validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
+                t_log[epoch] += batch_MSE(IOut, ISource)
+
 
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
         validation_psnr_log[epoch] = validation_psnr_log[epoch] / len(files_source)
+        t_log[epoch] = t_log[epoch] / len(files_source)
 
         # TODO get training and validation loss on ground truth images
         model_ground_truth = nn.Sequential(*list(model.children())[:-1])
 
-        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, validation_psnr=%.4f' \
-               %(epoch, train_loss_log[epoch], validation_loss_log[epoch], validation_psnr_log[epoch]))
+        print('Epoch %d: train_loss=%.4f, validation_loss=%.4f, mse=%.4f, validation_psnr=%.4f' \
+               %(epoch, train_loss_log[epoch], validation_loss_log[epoch], t_log[epoch], validation_psnr_log[epoch]))
 
         early_stopping(validation_loss_log[epoch], model)
 

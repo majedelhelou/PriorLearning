@@ -22,6 +22,15 @@ class Kernels:
         return kernel
 
 
+def batch_MSE(img, imclean):
+    Img = img.data.cpu().numpy().astype(np.float32)
+    Iclean = imclean.data.cpu().numpy().astype(np.float32)
+    MSE = 0
+    for i in range(Img.shape[0]):
+        MSE += np.mean(np.square(Iclean[i,:,:,:] - Img[i,:,:,:]))
+    return MSE/Img.shape[0]
+
+
 def batch_PSNR(img, imclean, data_range):
     Img = img.data.cpu().numpy().astype(np.float32)
     Iclean = imclean.data.cpu().numpy().astype(np.float32)
