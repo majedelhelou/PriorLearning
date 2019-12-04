@@ -14,15 +14,15 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 parser = argparse.ArgumentParser(description="DeblurringTest")
 
-parser.add_argument("--model_seed",        type=int,   default=1234, help='seed used when training the model')
-parser.add_argument("--model_patch_size",  type=int,   default=64,   help='train dataset patch size')
-parser.add_argument("--model_stride",      type=int,   default=32,   help='train dataset stride')
-parser.add_argument("--model_lr",          type=float, default=1e-3, help='lr used for training the model')
-parser.add_argument("--model_num_layers",  type=int,   default=10,   help='number of layers in the model')
-parser.add_argument("--model_kernel_size", type=int,   default=3,    help='kernel size in the model')
-parser.add_argument("--model_features",    type=int,   default=64,   help='number of features in the model')
-parser.add_argument("--gksize",            type=int,   default=11,   help='blur kernel size')
-parser.add_argument("--gsigma",            type=int,   default=3,    help='blur kernel sigma')
+parser.add_argument("--model_seed",        type=int,    default=1234, help='seed used when training the model')
+parser.add_argument("--model_patch_size",  type=int,    default=64,   help='train dataset patch size')
+parser.add_argument("--model_stride",      type=int,    default=32,   help='train dataset stride')
+parser.add_argument("--model_lr",          type=float,  default=1e-3, help='lr used for training the model')
+parser.add_argument("--model_num_layers",  type=int,    default=10,   help='number of layers in the model')
+parser.add_argument("--model_kernel_size", type=int,    default=3,    help='kernel size in the model')
+parser.add_argument("--model_features",    type=int,    default=64,   help='number of features in the model')
+parser.add_argument("--gksize",            type=int,    default=11,   help='blur kernel size')
+parser.add_argument("--gsigma",            type=int,    default=3,    help='blur kernel sigma')
 
 opt = parser.parse_args()
 
@@ -75,45 +75,34 @@ def main():
 
     # There are 400 base train images
     nb_base_train_images = 400
-    results = np.zeros((nb_base_train_images, 2))
+    results = np.zeros(nb_base_train_images)
 
     for model_DSsize in model_DSsizes:
         DSsize = int(model_DSsize.split('size')[-1])
         size_idx = (DSsize // base_to_patch) - 1
 
-        epochs_dir = os.path.join(model_dir, model_DSsize)
-        model_epochs = os.listdir(epochs_dir)
+        trained_dir = os.path.join(model_dir, model_DSsize)
+        model_trained = os.listdir(trained_dir)[0]
 
-        results_epoch = np.zeros(len(model_epochs))
+        print('Testing size_idx %d' % size_idx)
 
-        for model_epoch in model_epochs:
-            epoch = int(model_epoch.split('_')[-1].split('.')[0]) # + 1
+        net = CNN_Model(
+            num_of_layers = opt.model_num_layers,
+            kernel_size   = opt.model_kernel_size,
+            features      = opt.model_features,
+            gksize        = opt.gksize,
+            gsigma        = opt.gsigma
+        )
 
-            print('Testing size_idx %d at epoch %d' % (size_idx, epoch))
+        model = nn.DataParallel(net).cuda(0)
+        model.load_state_dict(torch.load(os.path.join(trained_dir, model_trained)))
+        model.eval()
 
-            net = CNN_Model(
-                num_of_layers = opt.model_num_layers,
-                kernel_size   = opt.model_kernel_size,
-                features      = opt.model_features,
-                gksize        = opt.gksize,
-                gsigma        = opt.gsigma
-            )
+        mean_psnr = inference('data', model)
 
-            model = nn.DataParallel(net).cuda(0)
-            model.load_state_dict(torch.load(os.path.join(epochs_dir, model_epoch)))
-            model.eval()
+        print('Mean_psnr:', mean_psnr)
 
-            mean_psnr = inference('data', model)
-
-            print('Mean_psnr:', mean_psnr)
-
-            results_epoch[epoch] = mean_psnr
-
-        max_epoch = np.argmax(results_epoch)
-        max_psnr  = np.max(results_epoch)
-
-        results[size_idx, 0] = max_epoch
-        results[size_idx, 1] = max_psnr
+        results[size_idx] = mean_psnr
 
 
     if not os.path.exists(log_dir):

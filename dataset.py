@@ -42,9 +42,8 @@ def prepare_data(data_path='./data', patch_size=64, stride=32, gksize=11, gsigma
     h5f = h5py.File(train_file_name, 'w')
     train_num = 0
     for i in range(len(files)):
-        img = cv2.imread(files[i])
+        Img = cv2.imread(files[i])
 
-        Img = cv2.filter2D(np.float32(img), -1, kernel, borderType=cv2.BORDER_CONSTANT)
         h, w, c = Img.shape
 
         Img = np.expand_dims(Img[:,:,0].copy(), 0)
@@ -53,7 +52,16 @@ def prepare_data(data_path='./data', patch_size=64, stride=32, gksize=11, gsigma
         patches = Im2Patch(Img, win=patch_size, stride=stride)
         print("file: %s # samples: %d" % (files[i], patches.shape[3]), end='\r')
         for n in range(patches.shape[3]):
-            data = patches[:,:,:,n].copy()
+            patch = np.expand_dims(patches[:,:,:,n].copy(), -1)
+            # Add the blurred dimension as a new entry on the last dimension
+            blurred = np.expand_dims(
+                np.expand_dims(
+                    cv2.filter2D(b[0], -1, kernel, borderType=cv2.BORDER_CONSTANT),
+                    -1
+                ),
+                0
+            )
+            data = np.concatenate((patch, blurred), axis=-1)
             h5f.create_dataset(str(train_num), data=data)
             train_num += 1
     h5f.close()
