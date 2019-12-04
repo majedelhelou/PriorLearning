@@ -96,12 +96,10 @@ def main():
         opt.dataset_size,
         opt.optimizer,
         opt.dataset_seed,
-        opt.patch_size,
-        opt.stride,
         opt.lr,
+        opt.batch_size,
         opt.num_of_layers,
-        opt.network_kernel_size,
-        opt.network_features
+        opt.gsigma
     )
 
     for epoch in range(opt.epochs):
@@ -169,7 +167,7 @@ def main():
             print('Early stopping triggered.')
 
         log_dir = os.path.join(early_stopping.model_name, 'DSsize%d' % opt.dataset_size)
-        log_dir = os.path.join('logs', model_dir)
+        log_dir = os.path.join('logs', log_dir)
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         np.save(os.path.join(log_dir, 'train_loss'), train_loss_log)
