@@ -54,7 +54,7 @@ def main():
         shuffle=True
     )
 
-    print("# of training samples: %d\n" % num_train_examples)
+    print("# of training samples: %d\n" % int(len(dataset_train)))
 
     print('** Creating network: **')
     net = CNN_Model(
