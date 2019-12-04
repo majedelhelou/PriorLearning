@@ -52,10 +52,15 @@ class CNN_Model(nn.Module):
 
         self.network = nn.Sequential(*layers)
 
-    def forward(self, x):
-        out = self.network(x)
-        return out
+    def forward(self, x, **kwargs):
+        if 'deblurr' not in kwargs:
+            deblurr = False
+        else:
+            deblurr = kwargs['deblurr']
 
-    def deblurr(self, x):
-        out = self.network[:-1](x)
+        if deblurr:
+            out = self.network[:-1](x)
+        else:
+            out = self.network(x)
+
         return out

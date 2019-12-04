@@ -120,6 +120,7 @@ def main():
             model.zero_grad()
             optimizer.zero_grad()
             batch = data[:,:,:,:,1]
+            print(batch.shape)
 
             # Training step
             img_train = Variable(batch.cuda(0))
@@ -139,6 +140,7 @@ def main():
         files_source = glob.glob(os.path.join('data', 'BSD68', '*.png'))
         files_source.sort()
         kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
+        pad = (opt.gksize) - 1 // 2
         for f in files_source:
             Img_clear = cv2.imread(f)
 
@@ -156,14 +158,14 @@ def main():
             ISource_clear = Variable(ISource_clear.cuda(0))
             with torch.no_grad():
                 IOut = model(ISource)
-                loss = criterion(IOut, ISource)
+                loss = criterion(IOut[:,:,pad:-pad,pad:-pad], ISource[:,:,pad:-pad,pad:-pad)
                 validation_loss_log[epoch] += loss.item()
-                validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
+                validation_psnr_log[epoch] += batch_PSNR(IOut[:,:,pad:-pad,pad:-pad], ISource[:,:,pad:-pad,pad:-pad], 1.)
 
-                IOut_clear = model.module.deblurr(ISource)
-                loss_clear = criterion(IOut_clear, ISource_clear)
+                IOut_clear = model(ISource, deblurr=True)
+                loss_clear = criterion(IOut_clear[:,:,pad:-pad,pad:-pad], ISource_clear[:,:,pad:-pad,pad:-pad])
                 validation_loss_clear[epoch] += loss_clear.item()
-                validation_psnr_clear[epoch] += batch_PSNR(IOut_clear, ISource_clear, 1.)
+                validation_psnr_clear[epoch] += batch_PSNR(IOut_clear[:,:,pad:-pad,pad:-pad], ISource_clear[:,:,pad:-pad,pad:-pad], 1.)
 
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
         validation_psnr_log[epoch] = validation_psnr_log[epoch] / len(files_source)
