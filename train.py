@@ -153,7 +153,7 @@ def main():
                 validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
 
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
-        validation_psnr_log[epoch] = validation_loss_log[epoch] / len(files_source)
+        validation_psnr_log[epoch] = validation_psnr_log[epoch] / len(files_source)
 
         # TODO get training and validation loss on ground truth images
         model_ground_truth = nn.Sequential(*list(model.children())[:-1])
