@@ -127,7 +127,7 @@ def main():
             img_train = Variable(batch.cuda(0))
             out_train = model(img_train)
 
-            loss = criterion(out_train, img_train) / (img_train.size()[0]*2)
+            loss = criterion(out_train, img_train)
 
             loss.backward()
             optimizer.step()
@@ -152,7 +152,7 @@ def main():
             ISource = Variable(ISource.cuda(0))
             with torch.no_grad():
                 IOut = model(ISource)
-                loss = criterion(IOut, ISource) / (ISource.size()[0]*2)
+                loss = criterion(IOut, ISource)
                 validation_loss_log[epoch] += loss.item()
                 validation_psnr_log[epoch] += batch_PSNR(IOut, ISource, 1.)
                 t_log[epoch] += batch_MSE(IOut, ISource)
