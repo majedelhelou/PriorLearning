@@ -56,7 +56,7 @@ def prepare_data(data_path='./data', patch_size=64, stride=32, gksize=11, gsigma
             # Add the blurred dimension as a new entry on the last dimension
             blurred = np.expand_dims(
                 np.expand_dims(
-                    cv2.filter2D(b[0], -1, kernel, borderType=cv2.BORDER_CONSTANT),
+                    cv2.filter2D(patch[0], -1, kernel, borderType=cv2.BORDER_CONSTANT),
                     -1
                 ),
                 0
