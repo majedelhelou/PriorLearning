@@ -1,7 +1,5 @@
 #!/bin/bash
 
-mode = $1
-
 if [ "$1" == "1" ]; then
   ./train_test_model.sh -o SGD -lr 1e-3
   ./train_test_model.sh -o SGD -lr 1e-2 -b 32
