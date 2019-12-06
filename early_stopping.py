@@ -8,20 +8,29 @@ class EarlyStopping:
         self.counter = 0
         self.early_stop = False
         self.min_val_loss = np.Inf
+        self.running_val_loss = []
         self.dataset_size = dataset_size
         self.model_name = 'DSseed%d_%s_lr%s_batchsize%d_depth%d_gsigma%d' \
                            % (seed, optimizer, 'p'.join(str(lr).split('.')), batchsize, depth, gsigma)
 
     def __call__(self, val_loss, model):
-        if val_loss >= self.min_val_loss:
+        self.running_val_loss.append(val_loss)
+        if len(self.running_val_loss > 11):
+            self.running_val_loss = self.running_val_loss[1:]
+
+        # Check if there is improvement over the moving median val loss
+        # But only perform a checkpoint if better than the min val loss as we want to keep the best model
+        if val_loss >= np.median(self.running_val_loss):
             self.counter += 1
             print('No improvement for %d epochs' %self.counter)
             if self.counter >= self.patience:
                 self.early_stop = True
-        else:
+        elif val_loss <= self.min_val_loss:
             self.save_checkpoint(val_loss, model)
             self.counter = 0
             self.min_val_loss = val_loss
+        else:
+            self.counter = 0
 
     def save_checkpoint(self, val_loss, model):
         model_dir = os.path.join(self.model_name, 'DSsize%d' % self.dataset_size)
