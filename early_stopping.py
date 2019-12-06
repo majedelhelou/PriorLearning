@@ -15,9 +15,10 @@ class EarlyStopping:
 
     def __call__(self, val_loss, model):
         self.running_val_loss.append(val_loss)
-        if len(self.running_val_loss > 11):
+        if len(self.running_val_loss) > 11:
             self.running_val_loss = self.running_val_loss[1:]
 
+        print('Median val loss: %.4f, min val loss: %.4f' % (np.median(self.running_val_loss), self.min_val_loss))
         # Check if there is improvement over the moving median val loss
         # But only perform a checkpoint if better than the min val loss as we want to keep the best model
         if val_loss >= np.median(self.running_val_loss):
