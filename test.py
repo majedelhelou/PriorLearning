@@ -69,10 +69,10 @@ def save_imgs(test_data, model, target_folder):
 
         base_name = f.split('/')[-1].split('.')[0]
 
-        cv2.imsave(target_folder + base_name + '_in_clear.png', Img_clear)
-        cv2.imsave(target_folder + base_name + '_in_blurred.png', Img_blurred)
-        cv2.imsave(target_folder + base_name + '_out_clear.png', IOut_clear)
-        cv2.imsave(target_folder + base_name + '_out_blurred.png', IOut)
+        cv2.imwrite(target_folder + base_name + '_in_clear.png', Img_clear)
+        cv2.imwrite(target_folder + base_name + '_in_blurred.png', Img_blurred)
+        cv2.imwrite(target_folder + base_name + '_out_clear.png', IOut_clear)
+        cv2.imwrite(target_folder + base_name + '_out_blurred.png', IOut)
 
 
 def main():

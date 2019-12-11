@@ -4,7 +4,7 @@ seed=1234
 optimizer=Adam
 lr=1e-3
 batch_size=16
-kernel=11
+kernel=3
 depth=10
 
 while (( "$#" )); do
@@ -63,14 +63,14 @@ done
 
 echo "training with DSsize = 16"
 if [ "$createdataset" == "true" ]; then
-  python3 train.py --preprocess=True --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gksize=$kernel
+  python3 train.py --preprocess=True --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
 else
-  python3 train.py --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gksize=$kernel
+  python3 train.py --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
 fi
 
 for i in 100 200 300 400
 do
   DSsize=$(($i*16))
   echo "training with DSsize = $DSsize"
-  python3 train.py --dataset_size=$DSsize --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gksize=$kernel
+  python3 train.py --dataset_size=$DSsize --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
 done
