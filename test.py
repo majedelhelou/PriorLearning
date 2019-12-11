@@ -114,8 +114,11 @@ def main():
             gsigma        = opt.gsigma
         )
 
+        model_path = os.path.join(trained_dir, model_trained)
+        print('Loading model:', model_path)
+
         model = nn.DataParallel(net).cuda(0)
-        model.load_state_dict(torch.load(os.path.join(trained_dir, model_trained)))
+        model.load_state_dict(torch.load(model_path))
         model.eval()
 
         save_imgs('data', model, os.path.join(img_dir, model_DSsize))
