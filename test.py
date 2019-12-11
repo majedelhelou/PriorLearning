@@ -36,6 +36,8 @@ def denormalize(data):
     return data*255.
 
 def save_imgs(test_data, model, target_folder):
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
     files_source = glob.glob(os.path.join(test_data, 'BSD68', '*.png'))
 
     files_source.sort()
