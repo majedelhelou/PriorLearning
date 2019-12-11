@@ -14,15 +14,17 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 parser = argparse.ArgumentParser(description="DeblurringTest")
 
-parser.add_argument("--model_seed",        type=int,    default=1234, help='seed used when training the model')
-parser.add_argument("--model_patch_size",  type=int,    default=64,   help='train dataset patch size')
-parser.add_argument("--model_stride",      type=int,    default=32,   help='train dataset stride')
-parser.add_argument("--model_lr",          type=float,  default=1e-3, help='lr used for training the model')
-parser.add_argument("--model_num_layers",  type=int,    default=10,   help='number of layers in the model')
-parser.add_argument("--model_kernel_size", type=int,    default=3,    help='kernel size in the model')
-parser.add_argument("--model_features",    type=int,    default=64,   help='number of features in the model')
-parser.add_argument("--gksize",            type=int,    default=11,   help='blur kernel size')
-parser.add_argument("--gsigma",            type=int,    default=3,    help='blur kernel sigma')
+parser.add_argument("--model_seed",        type=int,    default=1234,  help='seed used when training the model')
+parser.add_argument("--model_patch_size",  type=int,    default=64,    help='train dataset patch size')
+parser.add_argument("--model_stride",      type=int,    default=32,    help='train dataset stride')
+parser.add_argument("--model_lr",          type=float,  default=1e-3,  help='lr used for training the model')
+parser.add_argument("--model_num_layers",  type=int,    default=10,    help='number of layers in the model')
+parser.add_argument("--model_kernel_size", type=int,    default=3,     help='kernel size in the model')
+parser.add_argument("--model_features",    type=int,    default=64,    help='number of features in the model')
+parser.add_argument("--gksize",            type=int,    default=11,    help='blur kernel size')
+parser.add_argument("--gsigma",            type=int,    default=3,     help='blur kernel sigma')
+parser.add_argument("--optimizer",         type=str,    default='SGD', help="Network optimizer")
+parser.add_argument("--batch_size",        type=int,    default=16,    help="Training batch size")
 
 opt = parser.parse_args()
 
@@ -30,18 +32,19 @@ opt = parser.parse_args()
 def normalize(data):
     return data/255.
 
+def denormalize(data):
+    return data*255.
 
-def inference(test_data, model):
+def save_imgs(test_data, model, target_folder):
     files_source = glob.glob(os.path.join(test_data, 'BSD68', '*.png'))
 
     files_source.sort()
     kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
-    psnr_results = []
 
-    for f in files_source:
-        Img = cv2.imread(f)
-        Img = cv2.filter2D(np.float32(Img), -1, kernel, borderType=cv2.BORDER_CONSTANT)
-        Img = normalize(np.float32(Img[:,:,0]))
+    for f in files_source[:5]:
+        Img_clear = cv2.imread(f)
+        Img_blurred = cv2.filter2D(np.float32(Img_clear), -1, kernel, borderType=cv2.BORDER_CONSTANT)
+        Img = normalize(np.float32(Img_blurred[:,:,0]))
         Img = np.expand_dims(Img, 0)
         Img = np.expand_dims(Img, 1)
         ISource = torch.Tensor(Img)
@@ -49,26 +52,43 @@ def inference(test_data, model):
 
         with torch.no_grad():
             IOut = model(ISource)
-            psnr_results.append(batch_PSNR(IOut, ISource, 1.))
+            IOut_clear = model(ISource, deblurr=True)
 
-    return np.mean(psnr_results)
+        # denormalize and convert to 8-bit integers before saving
+        Img_blurred = np.uint8(Img_blurred)
+
+        IOut = IOut.data.cpu().numpy().astype(np.float32)
+        IOut = np.uint8(denormalize(IOut))
+        _, _, h, w = IOut.shape
+        IOut = IOut.reshape((h, w))
+
+        IOut_clear = IOut_clear.data.cpu().numpy().astype(np.float32)
+        IOut_clear = np.uint8(denormalize(IOut_clear))
+        _, _, h, w = IOut_clear.shape
+        IOut_clear = IOut_clear.reshape((h, w))
+
+        base_name = f.split('/')[-1].split('.')[0]
+
+        cv2.imsave(target_folder + base_name + '_in_clear.png', Img_clear)
+        cv2.imsave(target_folder + base_name + '_in_blurred.png', Img_blurred)
+        cv2.imsave(target_folder + base_name + '_out_clear.png', IOut_clear)
+        cv2.imsave(target_folder + base_name + '_out_blurred.png', IOut)
 
 
 def main():
 
     base_to_patch = ((180 - opt.model_patch_size) // opt.model_stride + 1) ** 2
 
-    model_name = 'DSseed%d_ps%d_stride%d_lr%d_layers%d_kernel%d_features%d' % (
+    model_name = 'DSseed%d_%s_lr%s_batchsize%d_depth%d_gsigma%d' % (
         opt.model_seed,
-        opt.model_patch_size,
-        opt.model_stride,
-        opt.model_lr,
+        opt.optimizer,
+        'p'.join(str(opt.model_lr).split('.')),
+        opt.batch_size,
         opt.model_num_layers,
-        opt.model_kernel_size,
-        opt.model_features
+        opt.gsigma
     )
 
-    log_dir = os.path.join('logs', model_name)
+    img_dir = os.path.join('saved_images', model_name)
     model_dir = os.path.join('saved_models', model_name)
 
     model_DSsizes = os.listdir(model_dir)
@@ -98,19 +118,7 @@ def main():
         model.load_state_dict(torch.load(os.path.join(trained_dir, model_trained)))
         model.eval()
 
-        mean_psnr = inference('data', model)
-
-        print('Mean_psnr:', mean_psnr)
-
-        results[size_idx] = mean_psnr
-
-
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    np.save(os.path.join(log_dir, 'results'), results)
-
-    print('Results saved inside Logs!')
+        save_imgs('data', model, os.path.join(img_dir, model_DSsize))
 
 
 if __name__ == "__main__":
