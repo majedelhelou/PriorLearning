@@ -105,7 +105,7 @@ if __name__ == '__main__':
     input_dim = patch_size
 
     dataset = Dataset(patch_size=patch_size, stride=32, size=6000, seed=1234)
-    dataloader = torch.utils.data.DataLoader(dataset=dataset, num_workers=1, batch_size=batch_size, shuffle=True)
+    dataloader = torch.utils.data.DataLoader(dataset=dataset, num_workers=4, batch_size=batch_size, shuffle=True)
 
     print('Number of samples:', len(dataset))
 
@@ -116,9 +116,14 @@ if __name__ == '__main__':
     vae = nn.DataParallel(vae_net).cuda(0)
     criterion.cuda(0)
 
-    optimizer = optim.Adam(vae.parameters(), lr=1e-3)
+    lr = 5e-3
+    optimizer = optim.Adam(vae.parameters(), lr=lr/5)
     l = None
     for epoch in range(100):
+
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = lr / (5 + epoch)
+
         for i, data in enumerate(dataloader, 0):
             batch = data[:,:,:,:,0]
             inputs = Variable(batch.cuda(0))
