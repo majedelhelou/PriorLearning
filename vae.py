@@ -109,16 +109,19 @@ if __name__ == '__main__':
 
     print('Number of samples:', len(dataset))
 
-    vae = VAE(input_dim, latent_dim=8, H=100)
+    vae_net = VAE(input_dim, latent_dim=8, H=100)
 
     criterion = nn.MSELoss()
+
+    vae = nn.DataParallel(vae_net).cuda(0)
+    criterion.cuda(0)
 
     optimizer = optim.Adam(vae.parameters(), lr=1e-3)
     l = None
     for epoch in range(100):
         for i, data in enumerate(dataloader, 0):
-            inputs = data[:,:,:,:,0]
-            inputs = Variable(inputs)
+            batch = data[:,:,:,:,0]
+            inputs = Variable(batch.cuda(0))
             optimizer.zero_grad()
             dec = vae(inputs)
             ll = latent_loss(vae.z_mean, vae.z_sigma)
