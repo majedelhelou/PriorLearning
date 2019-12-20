@@ -124,7 +124,7 @@ if __name__ == '__main__':
             inputs = Variable(batch.cuda(0))
             optimizer.zero_grad()
             dec = vae(inputs)
-            ll = latent_loss(vae.z_mean, vae.z_sigma)
+            ll = latent_loss(vae.module.z_mean, vae.module.z_sigma)
             loss = criterion(dec, inputs) + ll
             loss.backward()
             optimizer.step()
