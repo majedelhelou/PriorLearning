@@ -86,7 +86,7 @@ class VAE(torch.nn.Module):
         self.z_mean = mu
         self.z_sigma = sigma
 
-        return mu + sigma * Variable(std_z, requires_grad=False)  # Reparameterization trick
+        return mu + sigma * Variable(std_z.cuda(0), requires_grad=False)  # Reparameterization trick
 
     def forward(self, state):
         h_enc = self.encoder(state)
