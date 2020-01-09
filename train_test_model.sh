@@ -6,6 +6,7 @@ lr=1e-3
 batch_size=16
 kernel=3
 depth=10
+augmentation=no
 
 while (( "$#" )); do
   case "$1" in
@@ -55,6 +56,13 @@ while (( "$#" )); do
       fi
       shift
       ;;
+    -a|--augmentation)
+      if [ ! -z "$2" ]; then
+        augmentation=$2
+        shift
+      fi
+      shift
+      ;;
     *)
       shift
       ;;
@@ -63,14 +71,14 @@ done
 
 echo "training with DSsize = 16"
 if [ "$createdataset" == "true" ]; then
-  python3 train.py --preprocess=True --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
+  python3 train.py --preprocess=True --augmentation=$augmentation --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
 else
-  python3 train.py --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
+  python3 train.py --augmentation=$augmentation --dataset_size=16 --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
 fi
 
-for i in 100 200 300 400
+for i in 50 100 150 200 250 300 350 400
 do
   DSsize=$(($i*16))
   echo "training with DSsize = $DSsize"
-  python3 train.py --dataset_size=$DSsize --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
+  python3 train.py --augmentation=$augmentation --dataset_size=$DSsize --dataset_seed=$seed --optimizer=$optimizer --lr=$lr --batch_size=$batch_size --num_of_layers=$depth --gsigma=$kernel
 done

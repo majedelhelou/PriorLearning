@@ -11,9 +11,10 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 from models import CNN_Model
-from dataset import normalize, prepare_data, Dataset
+from dataset import normalize, prepare_data, Dataset, augment_dataset
 from early_stopping import EarlyStopping
 from util import Kernels, batch_PSNR, batch_MSE
+from vae import augment_with_vae
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -35,6 +36,7 @@ parser.add_argument("--epochs",              type=int,    default=150,   help="N
 parser.add_argument("--milestone",           type=int,    default=50,    help="When to decay learning rate; should be less than epochs")
 parser.add_argument("--lr",                  type=float,  default=1e-3,  help="Initial learning rate")
 parser.add_argument("--optimizer",           type=str,    default='SGD', help="Network optimizer")
+parser.add_argument("--augmentation",        type=str,    default='no',  help="dataset augmentation")
 
 opt = parser.parse_args()
 
@@ -43,11 +45,21 @@ def main():
     # Load dataset
     print('Loading dataset ...\n')
 
+    mode = None
+    ds_size = opt.dataset_size
+    if opt.augmentation == 'standard':
+        mode = 'augmented'
+        ds_size = 'full'
+    elif opt.augmentation == 'vae':
+        mode = 'vae'
+        ds_size = 'full'
+
     dataset_train = Dataset(
         patch_size = opt.patch_size,
         stride     = opt.stride,
-        size       = opt.dataset_size,
-        seed       = opt.dataset_seed
+        size       = ds_size,
+        seed       = opt.dataset_seed,
+        mode       = mode
     )
 
     loader_train = DataLoader(
@@ -101,7 +113,8 @@ def main():
         opt.lr,
         opt.batch_size,
         opt.num_of_layers,
-        opt.gsigma
+        opt.gsigma,
+        augmentation=opt.augmentation
     )
 
     # border size to excluse (cropping)
@@ -128,7 +141,7 @@ def main():
             img_train = Variable(batch.cuda(0))
             out_train = model(img_train)
 
-            loss = criterion(out_train[:,:,pad:-pad,pad:-pad], img_train[:,:,pad:-pad,pad:-pad])
+            loss = criterion(out_train, img_train)
 
             loss.backward()
             optimizer.step()
@@ -199,6 +212,23 @@ if __name__ == "__main__":
         prepare_data(
             patch_size = opt.patch_size,
             stride     = opt.stride,
+            gksize     = opt.gksize,
+            gsigma     = opt.gsigma
+        )
+
+    if opt.augmentation=='standard':
+        augment_dataset(
+            patch_size = opt.patch_size,
+            stride     = opt.stride,
+            size       = opt.dataset_size,
+            seed       = opt.dataset_seed
+        )
+    elif opt.augmentation=='vae':
+        augment_with_vae(
+            patch_size = opt.patch_size,
+            stride     = opt.stride,
+            size       = opt.dataset_size,
+            seed       = opt.dataset_seed,
             gksize     = opt.gksize,
             gsigma     = opt.gsigma
         )

@@ -70,11 +70,16 @@ def prepare_data(data_path='./data', patch_size=64, stride=32, gksize=11, gsigma
 
 
 class Dataset(udata.Dataset):
-    def __init__(self, train=True, patch_size=32, stride=16, size='full', seed=1234):
+    def __init__(self, train=True, patch_size=64, stride=32, size='full', seed=1234, mode=None):
         super(Dataset, self).__init__()
         self.train = train
 
-        self.train_file_name = 'datasets/train_ps%d_stride%d.h5' % (patch_size, stride)
+        if mode == 'augmented':
+            self.train_file_name = 'datasets/train_ps%d_stride%d_augmented.h5' % (patch_size, stride)
+        elif mode == 'vae':
+            self.train_file_name = 'datasets/train_ps%d_stride%d_vae.h5' % (patch_size, stride)
+        else:
+            self.train_file_name = 'datasets/train_ps%d_stride%d.h5' % (patch_size, stride)
         h5f = h5py.File(self.train_file_name, 'r')
 
         self.all_keys = sorted(list(h5f.keys()))
@@ -101,3 +106,33 @@ class Dataset(udata.Dataset):
         data = np.array(h5f[key])
         h5f.close()
         return torch.Tensor(data)
+
+
+def augment_dataset(patch_size=64, stride=32, size='full', seed=1234):
+    print('augmenting dataset')
+
+    ds = Dataset(patch_size=patch_size, stride=stride, size=size, seed=seed)
+    loader = torch.utils.data.DataLoader(
+        dataset=ds,
+        batch_size=1,
+        shuffle=False
+    )
+
+    augmented_file_name = 'datasets/train_ps%d_stride%d_augmented.h5' % (patch_size, stride)
+    h5f = h5py.File(augmented_file_name, 'w')
+    num_rots = 4
+
+    for patch_num, patch in enumerate(loader):
+        patch = patch[0].numpy()
+        for i in range(num_rots):
+            new_patch = np.expand_dims(np.rot90(patch[0], i), axis=0)
+            h5f.create_dataset(str(2 * num_rots * patch_num + i), data=new_patch)
+
+        # Mirror
+        patch = patch[:,::-1]
+        for i in range(num_rots):
+            new_patch = np.expand_dims(np.rot90(patch[0], i), axis=0)
+            h5f.create_dataset(str(2 * num_rots * patch_num + i + num_rots), data=new_patch)
+
+    h5f.close()
+    print('dataset augmentation done')

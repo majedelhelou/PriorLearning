@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 class EarlyStopping:
-    def __init__(self, dataset_size, optimizer, seed, lr, batchsize, depth, gsigma, patience=10):
+    def __init__(self, dataset_size, optimizer, seed, lr, batchsize, depth, gsigma, patience=10, augmentation=None):
         self.patience = patience
         self.counter = 0
         self.early_stop = False
@@ -12,6 +12,10 @@ class EarlyStopping:
         self.dataset_size = dataset_size
         self.model_name = 'DSseed%d_%s_lr%s_batchsize%d_depth%d_gsigma%d' \
                            % (seed, optimizer, 'p'.join(str(lr).split('.')), batchsize, depth, gsigma)
+        if augmentation=='standard':
+            self.model_name += '_augmented'
+        elif augmentation=='vae':
+            self.model_name += 'vae'
 
     def __call__(self, val_loss, model):
         self.running_val_loss.append(val_loss)

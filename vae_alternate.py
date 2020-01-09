@@ -1,10 +1,6 @@
 import os
 import torch
 import torch.utils.data
-import cv2
-import h5py
-import numpy as np
-from util import Kernels
 from torch import nn, optim
 from torch.autograd import Variable
 from torch.nn import functional as F
@@ -20,6 +16,10 @@ LOG_INTERVAL = 10
 EPOCHS = 10
 no_of_sample = 10
 patch_size = 64
+
+# connections through the autoencoder bottleneck
+# in the pytorch VAE example, this is 20
+ZDIMS = 20
 
 torch.manual_seed(SEED)
 if CUDA:
@@ -41,55 +41,49 @@ test_loader = torch.utils.data.DataLoader(
 )
 
 
-class Conv_Block(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, padding, stride, pool_kernel_size=(2, 2)):
-        super(Conv_Block, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size, padding, stride)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size, padding, stride)
-        self.pool = nn.MaxPool2d(pool_kernel_size)
-
-    def forward(self, x):
-        x = F.elu(self.conv1(x))
-        x = F.elu(self.conv2(x))
-        x = self.pool(x)
-
-        return x
-
-
 class VAE(nn.Module):
-    def __init__(self, patch_size):
+    def __init__(self, patch_size, Zdims):
         super(VAE, self).__init__()
 
         self.patch_size = patch_size
+        self.Zdims = Zdims
+        self.features1 = 16
+        self.features2 = 32
 
-        # Encoder
-        self.block1 = Conv_Block(1, 64, (3, 3), 1, 1)  # 32
-        self.block2 = Conv_Block(64, 128, (3, 3), 1, 1)  # 16
-        self.block3 = Conv_Block(128, 32, (3, 3), 1, 1)  # 8
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=self.features1, kernel_size=(4, 4),
+                               padding=((self.patch_size + 2) // 2, (self.patch_size + 2) // 2),
+                               stride=2)  # This padding keeps the size of the image same, i.e. same padding
+        self.conv2 = nn.Conv2d(in_channels=self.features1, out_channels=self.features2, kernel_size=(4, 4),
+                               padding=((self.patch_size + 2) // 2, (self.patch_size + 2) // 2), stride=2)
+        self.fc11 = nn.Linear(in_features=self.features2 * self.patch_size * self.patch_size, out_features=1024)
+        self.fc12 = nn.Linear(in_features=1024, out_features=self.Zdims)
 
-        # Decoder
-        self.fct_decode = nn.Sequential(
-            nn.Conv2d(16, 64, (3, 3), padding=1),
-            nn.ELU(),
-            nn.Upsample(scale_factor=2, mode='nearest'),  # 16
-            nn.Conv2d(64, 64, (3, 3), padding=1),
-            nn.ELU(),
-            nn.Upsample(scale_factor=2, mode='nearest'),  # 32
-            nn.Conv2d(64, 16, (3, 3), padding=1),
-            nn.ELU(),
-            nn.Upsample(scale_factor=2, mode='nearest'),  # 64
-        )
+        self.fc21 = nn.Linear(in_features=self.features2 * self.patch_size * self.patch_size, out_features=1024)
+        self.fc22 = nn.Linear(in_features=1024, out_features=self.Zdims)
+        self.relu = nn.ReLU()
 
-        self.final_decod_mean = nn.Conv2d(16, 1, (3, 3), padding=1)
+        # For decoder
+
+        # For mu
+        self.fc1 = nn.Linear(in_features=20, out_features=1024)
+        self.fc2 = nn.Linear(in_features=1024, out_features=(self.patch_size // 4) * (self.patch_size // 4) * self.features2)
+        self.conv_t1 = nn.ConvTranspose2d(in_channels=self.features2, out_channels=self.features1, kernel_size=4, padding=1, stride=2)
+        self.conv_t2 = nn.ConvTranspose2d(in_channels=self.features1, out_channels=1, kernel_size=4, padding=1, stride=2)
 
 
     def encode(self, x: Variable) -> (Variable, Variable):
         x = x.view(-1, 1, self.patch_size, self.patch_size)
-        x = F.elu(self.block1(x))
-        x = F.elu(self.block2(x))
-        x = F.elu(self.block3(x))
+        x = F.elu(self.conv1(x))
+        x = F.elu(self.conv2(x))
+        x = x.view(-1, self.features2 * self.patch_size * self.patch_size)
 
-        return x[:, :16, :, :], x[:, 16:, :, :]  # output shape - batch_size x 16 x 8 x 8
+        mu_z = F.elu(self.fc11(x))
+        mu_z = self.fc12(mu_z)
+
+        logvar_z = F.elu(self.fc21(x))
+        logvar_z = self.fc22(logvar_z)
+
+        return mu_z, logvar_z
 
 
     def reparameterize(self, mu: Variable, logvar: Variable) -> Variable:
@@ -115,11 +109,13 @@ class VAE(nn.Module):
 
 
     def decode(self, z: Variable) -> Variable:
-        z = self.fct_decode(z)
-        z = self.final_decod_mean(z)
-        z = F.sigmoid(z)
+        x = F.elu(self.fc1(z))
+        x = F.elu(self.fc2(x))
+        x = x.view(-1, self.features2, self.patch_size // 4, self.patch_size // 4)
+        x = F.relu(self.conv_t1(x))
+        x = F.sigmoid(self.conv_t2(x))
 
-        return z.view(-1, self.patch_size * self.patch_size)
+        return x.view(-1, self.patch_size * self.patch_size)
 
 
     def forward(self, x: Variable) -> (Variable, Variable, Variable):
@@ -158,14 +154,14 @@ class VAE(nn.Module):
         return BCE + KLD
 
 
-model = VAE(patch_size)
+model = VAE(patch_size, ZDIMS)
 if CUDA:
     model.cuda(0)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
 
-def train(epoch, train_loader=train_loader):
+def train(epoch):
     # toggle model to train mode
     model.train()
     train_loss = 0
@@ -220,54 +216,6 @@ def test(epoch):
     print('====> Test set loss: {:.4f}'.format(test_loss))
 
 
-def augment_with_vae(patch_size=64, stride=32, size='full', seed=1234, gksize=11, gsigma=3):
-    print('agumenting dataset with vae')
-
-    ds = Dataset(patch_size=patch_size, stride=stride, size=size, seed=seed)
-    loader = torch.utils.data.DataLoader(
-        dataset=ds,
-        batch_size=16,
-        shuffle=True,
-        **kwargs
-    )
-
-    for epoch in range(1, EPOCHS + 1):
-        train(epoch, train_loader=loader)
-
-    augmented_file_name = 'datasets/train_ps%d_stride%d_vae.h5' % (patch_size, stride)
-    h5f = h5py.File(augmented_file_name, 'w')
-
-    kernel = Kernels.kernel_2d(gksize, gsigma)
-
-    loader = torch.utils.data.DataLoader(
-        dataset=ds,
-        batch_size=1,
-        shuffle=False
-    )
-
-    for patch_num, patch in enumerate(loader):
-        patch = patch[0].numpy()
-        h5f.create_dataset(str(patch_num), data=patch)
-
-    for i in range(7 * len(loader)):
-        sample = Variable(torch.randn(1, 16, 8, 8))
-        if CUDA:
-            sample = sample.cuda(0)
-        sample = model.decode(sample).cpu().detach().numpy()
-        new_patch = sample.reshape(1, patch_size, patch_size, 1)
-        blurred = np.expand_dims(
-            np.expand_dims(
-                cv2.filter2D(new_patch[0], -1, kernel, borderType=cv2.BORDER_CONSTANT),
-                -1
-            ),
-            0
-        )
-        data = np.concatenate((new_patch, blurred), axis=-1)
-        h5f.create_dataset(str(len(loader) + i), data=data)
-
-    h5f.close()
-    print('dataset augmentation with vae done')
-
 if __name__ == "__main__":
 
     for epoch in range(1, EPOCHS + 1):
@@ -275,7 +223,7 @@ if __name__ == "__main__":
         test(epoch)
 
         # 64 sets of random ZDIMS-float vectors, i.e. 64 locations
-        sample = Variable(torch.randn(64, 16, 8, 8))
+        sample = Variable(torch.randn(64, ZDIMS))
         if CUDA:
             sample = sample.cuda(0)
         sample = model.decode(sample).cpu()

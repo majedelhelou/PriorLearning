@@ -30,10 +30,11 @@ opt = parser.parse_args()
 
 
 def normalize(data):
-    return data/255.
+    return data / 255.
 
 def denormalize(data):
-    return data*255.
+
+    return np.clip(data, 0., 1.) * 255.
 
 def save_imgs(test_data, model, target_folder):
     if not os.path.exists(target_folder):
