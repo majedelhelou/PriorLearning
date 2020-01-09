@@ -25,6 +25,8 @@ parser.add_argument("--gksize",            type=int,    default=11,    help='blu
 parser.add_argument("--gsigma",            type=int,    default=3,     help='blur kernel sigma')
 parser.add_argument("--optimizer",         type=str,    default='SGD', help="Network optimizer")
 parser.add_argument("--batch_size",        type=int,    default=16,    help="Training batch size")
+parser.add_argument("--augmentation",      type=str,    default='no',  help="dataset augmentation")
+parser.add_argument("--num_images",        type=int,    default=5,     help="number of images to save")
 
 opt = parser.parse_args()
 
@@ -44,7 +46,7 @@ def save_imgs(test_data, model, target_folder):
     files_source.sort()
     kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
 
-    for f in files_source[:5]:
+    for f in files_source[:opt.num_images]:
         Img_clear = cv2.imread(f)
         Img_blurred = cv2.filter2D(np.float32(Img_clear), -1, kernel, borderType=cv2.BORDER_CONSTANT)
         Img = normalize(np.float32(Img_blurred[:,:,0]))
@@ -77,6 +79,15 @@ def save_imgs(test_data, model, target_folder):
         cv2.imwrite(os.path.join(target_folder, base_name + '_out_clear.png'), IOut_clear)
         cv2.imwrite(os.path.join(target_folder, base_name + '_out_blurred.png'), IOut)
 
+        Img_clear = Img_clear[:,:,0]
+        Img_blurred = Img_blurred[:,:,0]
+
+        clear_both = np.hstack((Img_clear, IOut_clear))
+        blur_both  = np.hstack((Img_blurred, IOut))
+        grid       = np.vstack((clear_both, blur_both))
+
+        cv2.imwrite(os.path.join(target_folder, base_name + '_grid.png'), grid)
+
 
 def main():
 
@@ -90,6 +101,11 @@ def main():
         opt.model_num_layers,
         opt.gsigma
     )
+
+    if opt.augmentation == 'standard':
+        model_name += '_augmented'
+    elif opt.augmentation == 'vae':
+        model_name += 'vae'
 
     img_dir = os.path.join('saved_images', model_name)
     model_dir = os.path.join('saved_models', model_name)
