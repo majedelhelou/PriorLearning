@@ -28,6 +28,7 @@ if CUDA:
 # DataLoader instances will load tensors directly into GPU memory
 kwargs = {'num_workers': 4, 'pin_memory': True} if CUDA else {}
 
+# Use full default dataset for training
 dataset_train = Dataset(patch_size=patch_size, stride=32, size=6400, seed=SEED)
 # shuffle data at every epoch
 train_loader = torch.utils.data.DataLoader(
@@ -221,8 +222,20 @@ def test(epoch):
 
 
 def augment_with_vae(patch_size=64, stride=32, size='full', seed=1234, gksize=11, gsigma=3):
+    '''
+    Create the augmented dataset and save it
+    Inputs:
+        patch_size: the patch_size of the dataset to augment
+        stride: the stride of the dataset to augment
+        size: the size of the dataset to use for vae training
+        seed: the seed of the dataset to use for vae training
+        gksize: the gaussian blur kernel size
+        gsigma: the gaussian blur kernel sigma parameter
+    '''
+
     print('agumenting dataset with vae')
 
+    # Load the dataset to use for training
     ds = Dataset(patch_size=patch_size, stride=stride, size=size, seed=seed)
     loader = torch.utils.data.DataLoader(
         dataset=ds,
@@ -231,12 +244,15 @@ def augment_with_vae(patch_size=64, stride=32, size='full', seed=1234, gksize=11
         **kwargs
     )
 
+    # Train the VAE
     for epoch in range(1, EPOCHS + 1):
         train(epoch, train_loader=loader)
 
+    # Augment and save the dataset
     augmented_file_name = 'datasets/train_ps%d_stride%d_vae.h5' % (patch_size, stride)
     h5f = h5py.File(augmented_file_name, 'w')
 
+    # Create the gaussian blur kernel
     kernel = Kernels.kernel_2d(gksize, gsigma)
 
     loader = torch.utils.data.DataLoader(
@@ -249,6 +265,8 @@ def augment_with_vae(patch_size=64, stride=32, size='full', seed=1234, gksize=11
         patch = patch[0].numpy()
         h5f.create_dataset(str(patch_num), data=patch)
 
+    # To be fair with the standard data augmentation method, we create 7 times the number
+    # of images in the train set to augment it
     for i in range(7 * len(loader)):
         sample = Variable(torch.randn(1, 16, 8, 8))
         if CUDA:

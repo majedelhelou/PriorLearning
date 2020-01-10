@@ -10,6 +10,8 @@ class EarlyStopping:
         self.min_val_loss = np.Inf
         self.running_val_loss = []
         self.dataset_size = dataset_size
+
+        # Store the model name
         self.model_name = 'DSseed%d_%s_lr%s_batchsize%d_depth%d_gsigma%d' \
                            % (seed, optimizer, 'p'.join(str(lr).split('.')), batchsize, depth, gsigma)
         if augmentation=='standard':
@@ -18,6 +20,14 @@ class EarlyStopping:
             self.model_name += 'vae'
 
     def __call__(self, val_loss, model):
+        '''
+        Update the running median loss, the counter of the number of epochs without improvement over
+        the running median and save the model state if we have a new best validation loss
+        Inputs:
+            val_loss: the current validation loss
+            model: the current model state
+        '''
+
         self.running_val_loss.append(val_loss)
         if len(self.running_val_loss) > 11:
             self.running_val_loss = self.running_val_loss[1:]
@@ -38,6 +48,13 @@ class EarlyStopping:
             self.counter = 0
 
     def save_checkpoint(self, val_loss, model):
+        '''
+        Save the model state
+        Inputs:
+            val_loss: the current validation loss
+            model: the current model state
+        '''
+
         model_dir = os.path.join(self.model_name, 'DSsize%d' % self.dataset_size)
         model_dir = os.path.join('saved_models', model_dir)
         if not os.path.exists(model_dir):

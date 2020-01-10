@@ -35,19 +35,30 @@ def normalize(data):
     return data / 255.
 
 def denormalize(data):
-
     return np.clip(data, 0., 1.) * 255.
 
 def save_imgs(test_data, model, target_folder):
+    '''
+    Save the clear and blurred img (in) and the clear and blurred img (out)
+    Inputs:
+        test_data: folder where the data in stored
+        model: trained network
+        target_folder: where to save the images
+    '''
+
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
     files_source = glob.glob(os.path.join(test_data, 'BSD68', '*.png'))
 
     files_source.sort()
+    # Create the gausian blur kernel
     kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
 
     for f in files_source[:opt.num_images]:
+        # Read the clear img
         Img_clear = cv2.imread(f)
+
+        # Blur, normalize and transfer it to the GPU
         Img_blurred = cv2.filter2D(np.float32(Img_clear), -1, kernel, borderType=cv2.BORDER_CONSTANT)
         Img = normalize(np.float32(Img_blurred[:,:,0]))
         Img = np.expand_dims(Img, 0)
@@ -56,6 +67,7 @@ def save_imgs(test_data, model, target_folder):
         ISource = Variable(ISource.cuda(0))
 
         with torch.no_grad():
+            # Get the clear and blurred img (out) from the network
             IOut = model(ISource)
             IOut_clear = model(ISource, deblurr=True)
 
@@ -74,6 +86,7 @@ def save_imgs(test_data, model, target_folder):
 
         base_name = f.split('/')[-1].split('.')[0]
 
+        # Save the images
         cv2.imwrite(os.path.join(target_folder, base_name + '_in_clear.png'), Img_clear)
         cv2.imwrite(os.path.join(target_folder, base_name + '_in_blurred.png'), Img_blurred)
         cv2.imwrite(os.path.join(target_folder, base_name + '_out_clear.png'), IOut_clear)
@@ -86,11 +99,13 @@ def save_imgs(test_data, model, target_folder):
         blur_both  = np.hstack((Img_blurred, IOut))
         grid       = np.vstack((clear_both, blur_both))
 
+        # Save the grid of the four images
         cv2.imwrite(os.path.join(target_folder, base_name + '_grid.png'), grid)
 
 
 def main():
 
+    # For printing purposes
     base_to_patch = ((180 - opt.model_patch_size) // opt.model_stride + 1) ** 2
 
     model_name = 'DSseed%d_%s_lr%s_batchsize%d_depth%d_gsigma%d' % (
@@ -116,6 +131,7 @@ def main():
     nb_base_train_images = 400
     results = np.zeros(nb_base_train_images)
 
+    # Save images for each dataset size
     for model_DSsize in model_DSsizes:
         DSsize = int(model_DSsize.split('size')[-1])
         size_idx = (DSsize // base_to_patch) - 1
@@ -133,6 +149,7 @@ def main():
             gsigma        = opt.gsigma
         )
 
+        # Load the trained model state
         model_path = os.path.join(trained_dir, model_trained)
         print('Loading model:', model_path)
 

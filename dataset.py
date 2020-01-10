@@ -13,6 +13,10 @@ def normalize(data):
 
 
 def Im2Patch(img, win, stride=1):
+    '''
+    Divide the image into smaller patches
+    '''
+
     k = 0
     endc = img.shape[0]
     endw = img.shape[1]
@@ -31,17 +35,30 @@ def Im2Patch(img, win, stride=1):
 
 
 def prepare_data(data_path='./data', patch_size=64, stride=32, gksize=11, gsigma=3):
+    '''
+    Create the h5py dataset from the 400 base images in the BSD400 dataset
+    Inputs:
+        data_path: the folder where the BSD400 dataset is stored
+        patch_size: the size of the smaller patches
+        stride: the stride used to create the patches
+        gksize: the size of the gaussian blur kernel
+        gsigma: the sigma parameter of the gaussian blur kernel
+    '''
+
     print('processing data')
 
+    # Create the gaussian blur kernel
     kernel = Kernels.kernel_2d(gksize, gsigma)
 
     files = glob.glob(os.path.join(data_path, 'BSD400', '*.png'))
     files.sort()
     train_file_name = 'datasets/train_ps%d_stride%d.h5' % (patch_size, stride)
 
+    # Create the h5py file
     h5f = h5py.File(train_file_name, 'w')
     train_num = 0
     for i in range(len(files)):
+        # Read the base image
         Img = cv2.imread(files[i])
 
         h, w, c = Img.shape
@@ -49,6 +66,7 @@ def prepare_data(data_path='./data', patch_size=64, stride=32, gksize=11, gsigma
         Img = np.expand_dims(Img[:,:,0].copy(), 0)
         Img = np.float32(normalize(Img))
 
+        # Divide the image into smaller patches
         patches = Im2Patch(Img, win=patch_size, stride=stride)
         print("file: %s # samples: %d" % (files[i], patches.shape[3]), end='\r')
         for n in range(patches.shape[3]):
@@ -74,6 +92,7 @@ class Dataset(udata.Dataset):
         super(Dataset, self).__init__()
         self.train = train
 
+        # Store the h5py filename
         if mode == 'augmented':
             self.train_file_name = 'datasets/train_ps%d_stride%d_augmented.h5' % (patch_size, stride)
         elif mode == 'vae':
@@ -83,6 +102,7 @@ class Dataset(udata.Dataset):
         h5f = h5py.File(self.train_file_name, 'r')
 
         self.all_keys = sorted(list(h5f.keys()))
+        # shuffle the keys according to the seed
         np.random.seed(seed)
         np.random.shuffle(self.all_keys)
 
@@ -109,8 +129,18 @@ class Dataset(udata.Dataset):
 
 
 def augment_dataset(patch_size=64, stride=32, size='full', seed=1234):
+    '''
+    Augment a dataset with traditionnal methods
+    Inputs:
+        patch_size: the patch_size of the dataset to augment
+        stride: the stride of the dataset to augment
+        size: the size of the dataset to use for augmentation
+        seed: the seed of the dataset to use for augmentation
+    '''
+
     print('augmenting dataset')
 
+    # Load the dataset
     ds = Dataset(patch_size=patch_size, stride=stride, size=size, seed=seed)
     loader = torch.utils.data.DataLoader(
         dataset=ds,
@@ -118,17 +148,20 @@ def augment_dataset(patch_size=64, stride=32, size='full', seed=1234):
         shuffle=False
     )
 
+    # Create the new h5py file for the augmented dataset
     augmented_file_name = 'datasets/train_ps%d_stride%d_augmented.h5' % (patch_size, stride)
     h5f = h5py.File(augmented_file_name, 'w')
+    # Each image can have 4 different rotations
     num_rots = 4
 
     for patch_num, patch in enumerate(loader):
         patch = patch[0].numpy()
+        # Rotations of the image
         for i in range(num_rots):
             new_patch = np.expand_dims(np.rot90(patch[0], i), axis=0)
             h5f.create_dataset(str(2 * num_rots * patch_num + i), data=new_patch)
 
-        # Mirror
+        # Rotations of the mirrored image
         patch = patch[:,::-1]
         for i in range(num_rots):
             new_patch = np.expand_dims(np.rot90(patch[0], i), axis=0)

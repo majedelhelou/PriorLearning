@@ -80,6 +80,7 @@ def main():
         gsigma        = opt.gsigma
     )
 
+    # To disable learning of the gaussian blur layer
     non_trainable_layer_idx = str(len(net.network) - 1)
 
     # Loss
@@ -100,12 +101,14 @@ def main():
     else:
         optimizer = optim.Adam(model.parameters(), lr=opt.lr)
 
+    # Create empty arrays to store the metrics at each epoch
     train_loss_log = np.zeros(opt.epochs)
     validation_loss_log = np.zeros(opt.epochs)
     validation_psnr_log = np.zeros(opt.epochs)
     validation_loss_clear = np.zeros(opt.epochs)
     validation_psnr_clear = np.zeros(opt.epochs)
 
+    # Initialize the early stopping
     early_stopping = EarlyStopping(
         opt.dataset_size,
         opt.optimizer,
@@ -117,8 +120,8 @@ def main():
         augmentation=opt.augmentation
     )
 
-    # border size to excluse (cropping)
-    pad = (opt.gksize) - 1 // 2
+    # border size to exclude (cropping)
+    pad = (opt.gksize - 1) // 2
 
     for epoch in range(opt.epochs):
         if epoch < opt.milestone:
@@ -150,14 +153,16 @@ def main():
 
         train_loss_log[epoch] = train_loss_log[epoch] / len(loader_train)
 
-        # Eval
+        # Eval on the validation set
         model.eval()
         files_source = glob.glob(os.path.join('data', 'BSD68', '*.png'))
         files_source.sort()
         kernel = Kernels.kernel_2d(opt.gksize, opt.gsigma)
         for f in files_source:
+            # Load the img
             Img_clear = cv2.imread(f)
 
+            # Blur the img and put on GPU
             Img = cv2.filter2D(np.float32(Img_clear), -1, kernel, borderType=cv2.BORDER_CONSTANT)
             Img = normalize(np.float32(Img[:,:,0]))
             Img = np.expand_dims(Img, 0)
@@ -165,22 +170,26 @@ def main():
             ISource = torch.Tensor(Img)
             ISource = Variable(ISource.cuda(0))
 
+            # Normalize the clear img and put on GPU
             Img_clear = normalize(np.float32(Img_clear[:,:,0]))
             Img_clear = np.expand_dims(Img_clear, 0)
             Img_clear = np.expand_dims(Img_clear, 1)
             ISource_clear = torch.Tensor(Img_clear)
             ISource_clear = Variable(ISource_clear.cuda(0))
             with torch.no_grad():
+                # Get the blurred img (out) from the network
                 IOut = model(ISource)
                 loss = criterion(IOut[:,:,pad:-pad,pad:-pad], ISource[:,:,pad:-pad,pad:-pad])
                 validation_loss_log[epoch] += loss.item()
                 validation_psnr_log[epoch] += batch_PSNR(IOut[:,:,pad:-pad,pad:-pad], ISource[:,:,pad:-pad,pad:-pad], 1.)
 
+                # Get the clear img (out) before gaussian blur layer
                 IOut_clear = model(ISource, deblurr=True)
                 loss_clear = criterion(IOut_clear[:,:,pad:-pad,pad:-pad], ISource_clear[:,:,pad:-pad,pad:-pad])
                 validation_loss_clear[epoch] += loss_clear.item()
                 validation_psnr_clear[epoch] += batch_PSNR(IOut_clear[:,:,pad:-pad,pad:-pad], ISource_clear[:,:,pad:-pad,pad:-pad], 1.)
 
+        # Update the metrics
         validation_loss_log[epoch] = validation_loss_log[epoch] / len(files_source)
         validation_psnr_log[epoch] = validation_psnr_log[epoch] / len(files_source)
         validation_loss_clear[epoch] = validation_loss_clear[epoch] / len(files_source)
@@ -196,6 +205,7 @@ def main():
             print('Early stopping triggered.')
             break
 
+    # Save the results in files
     log_dir = os.path.join(early_stopping.model_name, 'DSsize%d' % opt.dataset_size)
     log_dir = os.path.join('logs', log_dir)
     if not os.path.exists(log_dir):
@@ -208,6 +218,7 @@ def main():
 
 
 if __name__ == "__main__":
+    # Create the training set
     if opt.preprocess:
         prepare_data(
             patch_size = opt.patch_size,
@@ -216,6 +227,7 @@ if __name__ == "__main__":
             gsigma     = opt.gsigma
         )
 
+    # Perform some data augmentation on the training set
     if opt.augmentation=='standard':
         augment_dataset(
             patch_size = opt.patch_size,
