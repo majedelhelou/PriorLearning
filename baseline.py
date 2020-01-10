@@ -9,9 +9,10 @@ from utils_fourier import deblurring_estimate
 
 parser = argparse.ArgumentParser(description="Baseline")
 
-parser.add_argument("--gksize",       type=int, default=11, help='blur kernel size')
-parser.add_argument("--gsigma",       type=int, default=3,  help='blur kernel sigma')
-parser.add_argument("--nb_img_saved", type=int, default=5,  help='Number of images to save')
+parser.add_argument("--gksize",       type=int,   default=11, help='blur kernel size')
+parser.add_argument("--gsigma",       type=int,   default=3,  help='blur kernel sigma')
+parser.add_argument("--nb_img_saved", type=int,   default=5,  help='Number of images to save')
+parser.add_argument("--reg_weight",   type=float, default=1e-2, help='L2 reg weight')
 
 opt = parser.parse_args()
 
@@ -36,13 +37,13 @@ def main():
     for idx, f in enumerate(files_source):
         # Load and blur the image
         Img_clear = cv2.imread(f)[:,:,0]
-        I_zero = np.zeros(Img_clear.shape)
+        #I_zero = np.zeros(Img_clear.shape)
         Img_blurred = cv2.filter2D(np.float32(Img_clear), -1, kernel, borderType=cv2.BORDER_CONSTANT)
         Img_blurred = normalize(np.float32(Img_blurred))
         Img_clear = normalize(np.float32(Img_clear))
 
         # Unblur the image
-        IOut_clear = deblurring_estimate(Img_blurred, I_zero, kernel, 0)
+        IOut_clear = deblurring_estimate(Img_blurred, Img_blurred, kernel, opt.reg_weight)
 
         loss = compare_psnr(IOut_clear[pad:-pad, pad:-pad], Img_clear[pad:-pad, pad:-pad], data_range=1.)
         losses.append(loss)
