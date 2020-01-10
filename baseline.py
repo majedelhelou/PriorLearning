@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(description="Baseline")
 parser.add_argument("--gksize",       type=int,   default=11, help='blur kernel size')
 parser.add_argument("--gsigma",       type=int,   default=3,  help='blur kernel sigma')
 parser.add_argument("--nb_img_saved", type=int,   default=5,  help='Number of images to save')
-parser.add_argument("--reg_weight",   type=float, default=1e-2, help='L2 reg weight')
+parser.add_argument("--reg_weight",   type=float, default=5e-2, help='L2 reg weight')
 
 opt = parser.parse_args()
 
