@@ -1,10 +1,10 @@
-# PriorLearning Semester Project 
+# [PriorLearning - Semester Project](add link to infoscience)
 
-Author: Frank Schmutz
+**Author**: Frank Schmutz
 
-Supervised by: Ruofan Zhou, [Majed El Helou](https://majedelhelou.github.io/)
+**Supervised by**: Ruofan Zhou, [Majed El Helou](https://majedelhelou.github.io/)
 
-Lab: [IVRL](https://www.epfl.ch/labs/ivrl/), EPFL
+**Affiliation**: [IVRL](https://www.epfl.ch/labs/ivrl/), EPFL
 
 ### 1. Dependencies
 * Numpy
