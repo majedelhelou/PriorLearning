@@ -1,4 +1,8 @@
-# PriorLearning
+# PriorLearning Semester Project 
+
+Author: Frank Schmutz
+Supervised by: Ruofan Zhou, [Majed El Helou](https://majedelhelou.github.io/)
+Lab: [IVRL](https://www.epfl.ch/labs/ivrl/), EPFL
 
 ### 1. Dependencies
 * Numpy
