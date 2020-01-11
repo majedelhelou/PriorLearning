@@ -1,4 +1,4 @@
-# [PriorLearning - Semester Project](add link to infoscience)
+# [PriorLearning - Semester Project](www.addlinkto.infoscience)
 
 **Author**: Frank Schmutz
 
